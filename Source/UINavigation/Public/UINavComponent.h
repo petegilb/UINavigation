@@ -11,6 +11,7 @@
 #include "Sound/SoundBase.h"
 #include "UINavComponent.generated.h"
 
+class UBorder;
 class UUINavWidget;
 class UTextBlock;
 class URichTextBlock;
@@ -122,6 +123,17 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavComponent)
 	UScrollBox* GetParentScrollBox() const { return ParentScrollBox; }
+
+	/** Omake Added Section Start **/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = UINavComponent)
+	bool bUseSelectorBorder = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = UINavComponent)
+	FLinearColor SelectorColor = FLinearColor::White;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, OptionalWidget = true), Category = UINavWidget)
+	UBorder* SelectorBorder = nullptr;
+	/** Omake Added Section End **/
 
 protected:
 
@@ -238,3 +250,4 @@ protected:
 
 	bool bWasFocusableWhenDisabled = true;
 };
+

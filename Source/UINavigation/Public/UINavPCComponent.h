@@ -481,6 +481,8 @@ public:
 
 	bool GetAndConsumeIgnoreSelectRelease();
 
+	/** OMAKE */
+	UFUNCTION(BlueprintCallable)
 	bool IsListeningToInputRebind() const;
 
 	//Returns the currently used input mode

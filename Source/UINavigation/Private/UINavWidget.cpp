@@ -1333,6 +1333,20 @@ void UUINavWidget::UpdateButtonStates(UUINavComponent* Component)
 	}
 }
 
+void UUINavWidget::OnNavigate_Implementation(UUINavComponent* FromComponent, UUINavComponent* ToComponent)
+{
+	/** Omake Updated Section Start **/
+	// Update the selector border if we want to
+	if (FromComponent && FromComponent->bUseSelectorBorder && FromComponent->SelectorBorder != nullptr){
+		FromComponent->SelectorBorder->SetBrushColor(FLinearColor::Transparent);
+	}
+
+	if (ToComponent && ToComponent->bUseSelectorBorder && ToComponent->SelectorBorder != nullptr){
+		ToComponent->SelectorBorder->SetBrushColor(ToComponent->SelectorColor);
+	}
+	/** Omake Updated Section End **/
+}
+
 void UUINavWidget::UpdateTextColor(UUINavComponent* Component)
 {
 	if (IsValid(CurrentComponent))
