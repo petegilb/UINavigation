@@ -47,8 +47,6 @@ void UUINavWidget::NativeConstruct()
 {
 	bBeingRemoved = false;
 
-	bForcingNavigation = GetDefault<UUINavSettings>()->bForceNavigation;
-
 	const UWorld* const World = GetWorld();
 	OuterUINavWidget = GetOuterObject<UUINavWidget>(this);
 	if (OuterUINavWidget != nullptr)
@@ -63,6 +61,14 @@ void UUINavWidget::NativeConstruct()
 		PreSetup(!bCompletedSetup);
 
 		ConfigureUINavPC();
+
+		if (InputComponent == nullptr)
+		{
+			InitializeInputComponent();
+			UInputDelegateBinding::BindInputDelegates(GetClass(), InputComponent, this);
+		}
+
+		bForcingNavigation = GetDefault<UUINavSettings>()->bForceNavigation || UINavPC->GetCurrentInputType() == EInputType::Gamepad;
 
 		Super::NativeConstruct();
 		return;
@@ -103,9 +109,6 @@ void UUINavWidget::NativeConstruct()
 				SetKeyboardFocus();
 			}
 		}
-
-		InitializeInputComponent();
-		UInputDelegateBinding::BindInputDelegates(GetClass(), InputComponent, this);
 	}
 
 	PreSetup(!bCompletedSetup);
@@ -345,10 +348,18 @@ void UUINavWidget::UINavSetup()
 {
 	if (UINavPC == nullptr) return;
 
+	if (InputComponent == nullptr)
+	{
+		InitializeInputComponent();
+		UInputDelegateBinding::BindInputDelegates(GetClass(), InputComponent, this);
+	}
+
 	if (WidgetComp == nullptr)
 	{
 		FSlateApplication::Get().ReleaseAllPointerCapture();
 	}
+
+	bForcingNavigation = GetDefault<UUINavSettings>()->bForceNavigation || UINavPC->GetCurrentInputType() == EInputType::Gamepad;
 
 	UUINavWidget* CurrentActiveWidget = UINavPC->GetActiveWidget();
 	const bool bShouldTakeFocus =
@@ -530,7 +541,7 @@ void UUINavWidget::OnLostNavigation_Implementation(UUINavWidget* NewActiveWidget
 
 void UUINavWidget::SetCurrentComponent(UUINavComponent* Component)
 {
-	const bool bShouldUnforceNavigation = !IsValid(CurrentComponent) && !GetDefault<UUINavSettings>()->bForceNavigation && !IsValid(HoveredComponent);
+	const bool bShouldUnforceNavigation = !IsValid(CurrentComponent) && !GetDefault<UUINavSettings>()->bForceNavigation && !IsValid(HoveredComponent) && UINavPC->GetCurrentInputType() != EInputType::Gamepad;
 
 	CurrentComponent = Component;
 
@@ -1737,8 +1748,8 @@ void UUINavWidget::ReturnToParent(const bool bRemoveAllParents, const int ZOrder
 	{
 		if (bAllowRemoveIfRoot && UINavPC != nullptr)
 		{
+			UINavPC->GetActiveWidget()->PropagateLoseNavigation(nullptr, UINavPC->GetActiveWidget(), nullptr);
 			UINavPC->SetActiveWidget(nullptr);
-			LoseNavigation(nullptr);
 
 			SelectCount = 0;
 			SetSelectedComponent(nullptr);
@@ -1914,7 +1925,7 @@ void UUINavWidget::CallOnNavigate(UUINavComponent* FromComponent, UUINavComponen
 	if (IsValid(ToComponent))
 	{
 		USoundBase* NavigatedSound = ToComponent->GetOnNavigatedSound();
-		if (NavigatedSound != nullptr && bForcingNavigation)
+		if (NavigatedSound != nullptr && bForcingNavigation && (IsValid(FromComponent) || GetDefault<UUINavSettings>()->bPlayOnNavigatedSoundOnFirstUINavComponent))
 		{
 			PlaySound(NavigatedSound);
 		}
@@ -2106,6 +2117,8 @@ void UUINavWidget::OnHoveredComponent(UUINavComponent* Component)
 
 	UINavPC->CancelRebind();
 
+	const bool bNavigatingToFirstComponent = CurrentComponent == nullptr;
+
 	SetHoveredComponent(Component);
 
 	if (Component == CurrentComponent && UINavPC->GetActiveSubWidget() == this)
@@ -2126,7 +2139,7 @@ void UUINavWidget::OnHoveredComponent(UUINavComponent* Component)
 			UpdateNavigationVisuals(CurrentComponent, false, true);
 
 			USoundBase* NavigatedSound = Component->GetOnNavigatedSound();
-			if (NavigatedSound != nullptr && bForcingNavigation)
+			if (NavigatedSound != nullptr && bForcingNavigation && (!bNavigatingToFirstComponent || GetDefault<UUINavSettings>()->bPlayOnNavigatedSoundOnFirstUINavComponent))
 			{
 				PlaySound(NavigatedSound);
 			}

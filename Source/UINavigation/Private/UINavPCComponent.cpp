@@ -739,7 +739,7 @@ void UUINavPCComponent::NotifyNavigatedTo(UUINavWidget* NavigatedWidget)
 		return;
 	}
 
-	if (NavigatedWidget == ActiveWidget && !IsValid(ActiveSubWidget) && IsValid(ActiveWidget->GetCurrentComponent()))
+	if (NavigatedWidget == ActiveWidget && (!IsValid(ActiveWidget->GetFirstComponent()) || IsValid(ActiveWidget->GetCurrentComponent())))
 	{
 		return;
 	}
@@ -1426,7 +1426,7 @@ FKey UUINavPCComponent::GetEnhancedInputKey(const UInputAction* Action, const EI
 				{
 					return Key;
 				}
-				else
+				else if (IsAxis(Key))
 				{
 					return GetKeyFromAxis(Key, Scale == EAxisType::Positive, Axis);
 				}
